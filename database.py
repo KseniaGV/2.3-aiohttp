@@ -1,26 +1,41 @@
 from datetime import datetime
+import os
+from dotenv import load_dotenv
+from sqlalchemy import String, DateTime
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
-from sqlalchemy import Column, DateTime, Integer, String, create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
-from config import DSN
+load_dotenv()
 
-PG_DSN = DSN
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-engine = create_engine(PG_DSN)
+engine = create_async_engine(DATABASE_URL, echo=False)
 
-Session = sessionmaker(bind=engine)
+AsyncSession = async_sessionmaker(
+    engine,
+    expire_on_commit=False
+)
 
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass
 
 
 class Advertisement(Base):
     __tablename__ = "advertisements"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(100), nullable=False)
+    description: Mapped[str] = mapped_column(String(500), nullable=False)
+    owner: Mapped[str] = mapped_column(String(100), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow
+    )
 
-    id = Column(Integer, primary_key=True)
-    title = Column(String(100), nullable=False)
-    description = Column(String(500), nullable=False)
-    owner = Column(String(50), nullable=False)
-    created_at = Column(DateTime, default=datetime.now())
-
-
-Base.metadata.create_all(engine)
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "description": self.description,
+            "owner": self.owner,
+            "created_at": self.created_at.isoformat(),
+        }
