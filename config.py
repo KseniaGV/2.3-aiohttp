@@ -1,1 +1,0 @@
-DSN = 'postgresql://postgres:----@localhost:5432/postgres'
